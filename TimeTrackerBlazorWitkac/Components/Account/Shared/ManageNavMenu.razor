@@ -1,0 +1,40 @@
+﻿<ul class="nav nav-underline flex-column nav-hover">
+    <li class="nav-item">
+        <NavLink class="nav-link" href="Account/Manage" Match="NavLinkMatch.All">
+            Profil
+        </NavLink>
+    </li>
+    @if (!isExternalLogin)
+    {
+        <li class="nav-item">
+            <NavLink class="nav-link" href="Account/Manage/Email">Email</NavLink>
+        </li>
+        <li class="nav-item">
+            <NavLink class="nav-link" href="Account/Manage/ChangePassword">Hasło</NavLink>
+        </li>
+    }
+    <li class="nav-item">
+        <NavLink class="nav-link" href="Account/Manage/PersonalData">Dane osobowe</NavLink>
+    </li>
+</ul>
+
+@code {
+
+    private UserEntity _userEntity = default!;
+    private bool isExternalLogin;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var authUser = authState.User;
+        var tokenClaims = authUser.FindFirst("AuthorizationType");
+        if (tokenClaims == null)
+        {
+            isExternalLogin = true;
+            return;
+        }
+
+        isExternalLogin = tokenClaims.Value != "Cookie";
+    }
+
+}

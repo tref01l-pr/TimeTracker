@@ -1,0 +1,23 @@
+﻿<EditForm Model="model">
+    <InputSelect @bind-Value="model.UserCardNumber" class="form-control" @oninput="OnCardChange">
+        @foreach (var item in model.UserCards)
+        {
+            <option value="@item.Number">@item.Company.Name</option>
+        }
+    </InputSelect>
+</EditForm>
+
+
+
+@code {
+    [Parameter]
+    public CardSwipeModel model { get; set; }
+    [Parameter]
+    public EventCallback<ChangeEventArgs> CardChange { get; set; }
+
+
+    private async Task OnCardChange(ChangeEventArgs e)
+    {
+        await CardChange.InvokeAsync(e);
+    }
+}

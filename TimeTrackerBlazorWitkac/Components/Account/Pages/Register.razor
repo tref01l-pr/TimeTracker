@@ -1,0 +1,130 @@
+﻿@page "/Account/Register"
+
+@inject ILogger<Register> LoggerRegister
+@inject IToastNotificationService ToastService
+
+<PageTitle>Register</PageTitle>
+
+<h1>Register</h1>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="alert alert-info" role="alert" style="display: @((string.IsNullOrWhiteSpace(Message) ? "none" : "block"));">
+            @Message
+        </div>
+        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
+            <DataAnnotationsValidator />
+            <h2>Utwórz nowe konto.</h2>
+            <hr />
+            <ValidationSummary class="text-danger" role="alert" />
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                <label for="email">E-mail</label>
+                <ValidationMessage For="() => Input.Email" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="hasło" />
+                <label for="password">Hasło</label>
+                <ValidationMessage For="() => Input.Password" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText type="password" @bind-Value="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="hasło" />
+                <label for="confirm-password">Potwierdź hasło</label>
+                <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <RoleSelector Input="Input" Roles="roles"/>
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Zarejestruj się</button>
+        </EditForm>
+    </div>
+    <div class="col-md-6 col-md-offset-2">
+        <section>
+            <h3>Use another service to register.</h3>
+            <hr/>
+            <ExternalLoginPicker/>
+        </section>
+    </div>
+</div>
+
+@code {
+    private IEnumerable<IdentityError>? identityErrors;
+
+    [SupplyParameterFromForm] 
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery] 
+    private string? ReturnUrl { get; set; }
+
+    private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
+    private IList<string> roles = new List<string>();
+
+    /// <summary>
+    /// Initializes the component and sets up the available roles
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        var rolesResult = await RolesService.GetAllAsync();
+        if (rolesResult.IsFailure)
+        {
+            return;
+        }
+
+        roles = rolesResult.Value;
+    }
+
+    public async Task RegisterUser(EditContext editContext)
+    {
+            var user = User.Builder()
+                .SetUserName(Input.Email)
+                .SetEmail(Input.Email)
+                .Build();
+
+            if (user.IsFailure)
+            {
+                ToastService.ShowError(user.Error);
+                return;
+            }
+
+            var registrationResult = await AuthorizationService.RegisterWithPasswordAsync(user.Value, Input.Password, Input.Role!, ReturnUrl);
+
+            if (registrationResult.IsFailure)
+            {
+                ToastService.ShowError(registrationResult.Error);
+                return;
+            }
+
+            LoggerRegister.LogInformation("User created a new account with password.");
+
+            if (UserManager.Options.SignIn.RequireConfirmedAccount)
+            {
+                RedirectManager.RedirectTo(
+                    "Account/RegisterConfirmation",
+                    new() { ["email"] = Input.Email, ["returnUrl"] = ReturnUrl });
+            }
+        
+            RedirectManager.RedirectTo(ReturnUrl);
+    }
+
+    private sealed class InputModel : IInputModel
+    {
+        [Required]
+        [EmailAddress]
+        [Display(Name = "E-mail")]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [StringLength(100, ErrorMessage = "{0} musi mieć co najmniej {2} i maksymalnie {1} znaków.", MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Hasło")]
+        public string Password { get; set; } = "";
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Potwierdź hasło")]
+        [Compare("Password", ErrorMessage = "Hasło i hasło potwierdzenia nie są zgodne.")]
+        public string ConfirmPassword { get; set; } = "";
+
+        [Required] [Display(Name = "Rola")] public string? Role { get; set; } = "";
+    }
+
+}

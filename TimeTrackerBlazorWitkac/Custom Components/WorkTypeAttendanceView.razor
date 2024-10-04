@@ -1,0 +1,20 @@
+﻿@using BlazorBootstrap
+@using Microsoft.AspNetCore.Components.Authorization
+@using TimeTrackerBlazorWitkac.Contracts.Responses
+@using TimeTrackerBlazorWitkac.Data.Entities
+@using TimeTrackerBlazorWitkac.Interfaces.Services.Application
+@inject IUserCardsService UserCardsService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (data != null && data.WorkDayType == Data.Models.WorkDayType.Attendance)
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public WorkDayResponse data { get; set; } = default!;
+}

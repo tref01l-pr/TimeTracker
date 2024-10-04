@@ -1,0 +1,126 @@
+﻿@inherits LayoutComponentBase
+
+<div class="page">
+    <Navigation />
+    <main>
+        <AuthorizeView>
+            <Authorized>
+                <nav class="navbar navbar-expand-lg bg-body-tertiary">
+                    <div class="container-fluid">
+                        <div class="collapse navbar-collapse" id="navbarNavDarkDropdown">
+                            <ul class="navbar-nav ms-auto">
+                                <li class="nav-item dropdown">
+                                    <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                        @username
+                                    </button>
+                                    <ul class="dropdown-menu mt-2">
+                                        <li>
+                                            <a href="/Account/Manage" class="dropdown-item">Ustawienia</a>
+                                        </li>
+                                        <li>
+                                            <form action="/Account/Logout" method="post" >
+                                                <AntiforgeryToken />
+                                                <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                                                <button type="submit" class="btn dropdown-item">
+                                                    <span>Wyloguj się</span>
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </nav>
+            </Authorized>
+        </AuthorizeView>
+        <article class="content px-4">
+            @Body
+        </article>
+        <footer class="bg-body-tertiary text-center text-lg-start mt-4">
+            <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.05);">
+                © @(DateTime.Now.Year)
+            </div>
+        </footer>
+    </main>
+ 
+</div>
+
+<div id="blazor-error-ui">
+    Wystąpił nieobsługiwany błąd.
+    <a href="" class="reload">Przeładowanie</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+<Toasts class="p-3" AutoHide="true" Delay="6000" Placement="ToastsPlacement.TopRight" />
+<RadzenComponents @rendermode="InteractiveServer" />
+<Preload LoadingText="Loading..."/>
+<style>
+    .top-rows {
+        position: relative;
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        overflow: visible;
+    }
+
+    .dropdown-menu .dropdown-item > li > a:hover {
+        background-image: none;
+        background-color: #000;
+    }
+
+    .dropdown-menu .dropdown-item > li > button:hover {
+        background-image: none;
+        background-color: #000;
+    }
+
+    .dropdown-menu .dropdown-item > li > form:hover {
+        background-image: none;
+        background-color: #000;
+    }
+    .navbar {
+        background: none;
+    }
+
+    .dropdown-menu a:hover {
+        background-color: transparent;
+    }
+
+    .dropdown-menu button:hover {
+        background-color: transparent;
+    }
+
+    .dropdown-menu form:hover {
+        background-color: transparent;
+    }
+
+    footer {
+        clear: both;
+        position: relative;
+        z-index: 1;
+        height: -3em;
+        margin-top: 40em;
+       
+    }
+</style>
+@code {
+    private UserEntity user = default!;
+    private string? username;
+    private string? currentUrl;
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userClaims = authState.User;
+        if (userClaims.Identity is not null && userClaims.Identity.IsAuthenticated)
+        {
+            user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+            username = await UserManager.GetUserNameAsync(user);
+        }
+
+    }
+
+}
+

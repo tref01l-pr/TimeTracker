@@ -1,0 +1,140 @@
+@using TimeTrackerBlazorWitkac.Resources
+@inject IJSRuntime jsRuntime
+
+<RadzenTheme Theme="material" @rendermode="InteractiveServer" />
+<Toasts class="p-3" Messages="messages" AutoHide="true" Delay="6000" Placement="ToastsPlacement.TopRight" />
+<div class="radzen-scheduler-wrapper">
+    <RadzenScheduler @ref="scheduler"
+                     class="scheduler"
+                     style="height: 800px"
+                     Data="@workDays"
+                     TItem="WorkDayResponse"
+                     StartProperty="StartDate"
+                     EndProperty="EndDate"
+                     TextProperty="TextByCalendar"
+                     SlotSelect="OnSlotSelect"
+                     SlotRender="OnSlotRender"
+                     AppointmentSelect="OnAppointmentSelect"
+                     AppointmentRender="OnAppointmentRender"
+                     AppointmentMouseEnter="OnMouseEnter"
+                     AppointmentMouseLeave="OnMouseLeave"
+                     LoadData="OnLoadData">
+        <Template Context="data">
+            <WorkTypeAbsenceView data="data">
+                <RadzenColumn Style="display: flex; align-items: center; justify-content: flex-start; gap: 3px; height: 100%; width: 100%;">
+                    <AbsenceColumn data="data" />
+                </RadzenColumn>
+            </WorkTypeAbsenceView>
+        </Template>
+        <ChildContent>
+            <RadzenMonthView />
+        </ChildContent>
+    </RadzenScheduler>
+</div>
+<style>
+    .Holiday {
+        white-space: normal;
+        overflow: hidden text-overflow: break-word;
+    }
+
+        .Holiday::after {
+            content: attr(after-text);
+        }
+
+    .scheduler {
+        height: 900px;
+    }
+
+    .rz-scheduler-nav button:nth-child(0) {
+        display: none;
+    }
+
+    .rz-button.rz-button-md.rz-variant-filled.rz-primary.rz-shade-default.rz-state-active {
+        display: none;
+    }
+
+    .rz-scheduler-nav-title {
+        padding-right: 100px;
+    }
+</style>
+@code {
+    [CascadingParameter(Name = "User")]
+    public UserEntity user { get; set; } = default!;
+    private RadzenScheduler<WorkDayResponse> scheduler;
+    private IList<WorkDayResponse> workDays;
+    private List<ToastMessage> messages = new List<ToastMessage>();
+    private DateTime startDate = DateTime.Today;
+
+
+    async Task OnLoadData(SchedulerLoadDataEventArgs args)
+    {
+        workDays = (await Scheduler.GetInitialDataByDate(
+       DateOnly.FromDateTime(args.Start),
+       DateOnly.FromDateTime(args.End),
+      user)).Value;
+
+
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var savedDate = await jsRuntime.InvokeAsync<string>("localStorage.getItem", "selectedCalendarDate");
+
+            if (!string.IsNullOrEmpty(savedDate))
+            {
+                startDate = DateTime.Parse(savedDate);
+                StateHasChanged();
+            }
+        }
+    }
+    private void OnMouseEnter(SchedulerAppointmentMouseEventArgs<WorkDayResponse> args)
+    {
+        if (args.Data.WorkDayType == WorkDayType.Absence)
+        {
+            TooltipService.Open(args.Element, ts =>
+            @<AbsenceTooltip Reason="@args.Data.Reason"
+                StartDate="@args.Data.StartDate"
+                EndDate="@args.Data.EndDate.Value"
+                WorkDay="@args.Data" />
+        ,
+    new TooltipOptions { Position = TooltipPosition.Bottom, Style = $"background:  {Constants.DefaultBackgroundToolTipColor}; color: {Constants.DefaultToolTipColor}", Duration = Constants.DefaultDurationToolTip });
+        }
+        else if (args.Data.WorkDayType == WorkDayType.Holiday)
+        {
+            TooltipService.Open(args.Element, ts =>
+            @<HolidayTooltip StartDate="@args.Data.StartDate"
+                Name="@args.Data.Name" />
+    ,
+        new TooltipOptions { Position = TooltipPosition.Bottom, Style = $"background:  {Constants.DefaultBackgroundToolTipColor}; color: {Constants.DefaultToolTipColor}", Duration = Constants.DefaultDurationToolTip });
+        }
+
+    }
+    void OnMouseLeave(SchedulerAppointmentMouseEventArgs<WorkDayResponse> args)
+    {
+        Scheduler.OnMouseLeaveEvent(args);
+    }
+    async Task OnSlotSelect(SchedulerSlotSelectEventArgs args)
+    {
+        await jsRuntime.InvokeVoidAsync("localStorage.setItem", "selectedCalendarDate", args.Start.ToString("yyyy-MM-dd"));
+        await Scheduler.OnSlotSelectEvent(args, user, workDays, scheduler, messages);
+
+    }
+
+    private void OnSlotRender(SchedulerSlotRenderEventArgs args)
+    {
+        Scheduler.OnSlotRender(args, messages, workDays);
+    }
+    void OnAppointmentRender(SchedulerAppointmentRenderEventArgs<WorkDayResponse> args)
+    {
+        Scheduler.OnAppointmentRender(args, workDays, user);
+    }
+
+    async Task OnAppointmentSelect(SchedulerAppointmentSelectEventArgs<WorkDayResponse> args)
+    {
+        await Scheduler.HandleAppointmentSelectAsync(args, user, scheduler, messages);
+    }
+
+
+}
+

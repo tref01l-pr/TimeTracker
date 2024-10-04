@@ -1,0 +1,117 @@
+@using TimeTrackerBlazorWitkac.AlertMessages.ErrorMessages.Services.Application
+
+@inject IToastNotificationService ToastNotificationService
+@inject IAbsenceStatusService AbsenceStatusService
+@inject DialogService DialogService
+
+<RadzenStack Gap="1rem" Orientation="Radzen.Orientation.Vertical" Style="height: 100%;">
+    <RadzenTemplateForm TItem="WorkDayResponse" Data="@model" Submit="@DeleteDate">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <HasAbsenceView models="models">
+                        <p>
+                            <strong>Pracownik: </strong> @models.Email
+                        </p>
+                        <p><strong>Planowany urlop: </strong>@models.Absence.StartDate - @(models.Absence.EndDate.HasValue ? models.Absence.EndDate : "None")</p>
+                        <p>
+                            <strong>Powód nieobecności: </strong>@models.Absence.Reason
+                        </p>
+                        <p>
+                            <strong>Rodzaj nieobecności: </strong>@models.Absence.AbsenceType?.Name
+                        </p>
+                    </HasAbsenceView>                    
+                </div>
+                <div class="modal-footer">
+                    <button @onclick="OnClose" type="button" class="btn btn-secondary m-2" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn btn-danger">Odrzuć</button>
+
+                    @if (model?.IsFullyConfirmed != ConfirmationStatus.Confirmed)
+                    {
+                        <button @onclick="ConfirmStatusOfType" type="button" disabled="@(model?.StatusOfType == ConfirmationStatus.Confirmed)" class="btn btn-success m-2">Akceptuj RN</button>
+                        <button @onclick="ConfirmStatusOfDates" type="button" disabled="@(model?.StatusOfDates == ConfirmationStatus.Confirmed)" class="btn btn-success">Akceptuj DW</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </RadzenTemplateForm>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public DetailAbsencesModel models { get; set; }
+    private WorkDayResponse model;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(models.Absence.UserId))
+        {
+            var userResult = await UsersService.GetByIdAsync<User>(models.Absence.UserId);
+            if (userResult.IsFailure)
+            {
+                ToastNotificationService.ShowError(userResult.Error);
+                return;
+            }
+
+            if (userResult.Value == null)
+            {
+                ToastNotificationService.ShowError(UsersServiceErrorMessages.NotFoundError.GetDescription());
+                return;
+            }
+            
+            models.Email = userResult.Value.Email ?? "";
+        }
+
+        model = models?.Absence ?? new WorkDayResponse();
+
+    }
+
+    protected override void OnParametersSet()
+    {
+        
+    }
+
+    /// <summary>
+    /// Closes the absence edit dialog.
+    /// </summary>
+    private void OnClose()
+    {
+        AbsenceStatusService.OnClose(model);
+    }
+
+    private async Task ConfirmStatusOfType()
+    {
+        var result = await AbsenceStatusService.ConfirmTypeAbsence<WorkDayResponse>(model.Id);
+        if (result.IsFailure)
+            return;
+
+        model.StatusOfType = result.Value.StatusOfType;
+        model.StatusOfDates = result.Value.StatusOfDates;
+        model.IsFullyConfirmed = result.Value.IsFullyConfirmed;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmStatusOfDates()
+    {
+        var result = await AbsenceStatusService.ConfirmDatesAbsence<WorkDayResponse>(model.Id);
+        if (result.IsFailure)
+            return;
+
+        model.StatusOfType = result.Value.StatusOfType;
+        model.StatusOfDates = result.Value.StatusOfDates;
+        model.IsFullyConfirmed = result.Value.IsFullyConfirmed;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Deletes the absence and closes the dialog.
+    /// </summary>
+    private async Task DeleteDate(WorkDayResponse model)
+    {
+        if (model != null)
+        {
+            await AbsenceStatusService.DeleteDate(model);
+            AbsenceStatusService.OnClose(model);
+        }
+    }
+}

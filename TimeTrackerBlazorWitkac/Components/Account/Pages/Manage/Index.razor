@@ -1,0 +1,130 @@
+﻿@page "/Account/Manage"
+@attribute [Authorize]
+
+@using TimeTrackerBlazorWitkac.AlertMessages.ErrorMessages.Services.Application
+@inject IToastNotificationService ToastNotification
+
+<PageTitle>Profil</PageTitle>
+
+<h3>Profil</h3>
+<StatusMessage />
+
+<div class="row">
+    <CascadingValue Name="User" Value="user">
+        <Profile role="@UserRoles" isShow="true" />
+    </CascadingValue>
+
+    <div class="col-md-6">
+        <EditForm Model="Input" FormName="profile" OnSubmit="OnValidSubmitAsync" method="post">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+            <div class="form-floating mb-3">
+                <input type="text" value="@username" class="form-control" placeholder="Wybierz swoją nazwę użytkownika." disabled />
+                <label for="username" class="form-label">Nazwa użytkownika</label>
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.PhoneNumber" class="form-control" placeholder="Wprowadź swój numer telefonu." />
+                <label for="phone-number" class="form-label">Numer telefonu</label>
+                <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputDate @bind-Value="Input.DateOfBirth" class="form-control" placeholder="Wprowadź dzień swoich urodzin." />
+                <label for="phone-number" class="form-label">Data urodzenia</label>
+                <ValidationMessage For="() => Input.DateOfBirth" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <RoleSelector Input="Input" Roles="@TotalRoles" />
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Zapisz</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private UserEntity user = default!;
+    private string? username;
+    private string? phoneNumber;
+    private IList<string> TotalRoles = new List<string>();
+    private IList<string> UserRoles = new List<string>(); 
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    private IEnumerable<IdentityError>? identityErrors;
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        var fullUserInfo = await UsersService.GetByIdAsync<UserResponse>(user.Id);
+        if (fullUserInfo.IsFailure)
+        {
+            ToastNotification.ShowError(fullUserInfo.Error);
+            return;
+        }
+
+        if (fullUserInfo.Value == null)
+        {
+            ToastNotification.ShowError(UsersServiceErrorMessages.NotFoundError.GetDescription());
+            return;
+        }
+        username = fullUserInfo.Value.UserName;
+        phoneNumber = fullUserInfo.Value.PhoneNumber;
+
+        UserRoles = fullUserInfo.Value.Roles;
+        var res = await RolesService.GetAllAsync();
+        if(res.IsFailure)
+        {
+            ToastNotification.ShowError(RolesServiceErrorMessages.NotFoundError.GetDescription());
+        }
+        TotalRoles = res.Value;
+        Input.PhoneNumber ??= phoneNumber;
+        Input.DateOfBirth ??= user.DateOfBirth;
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        user.PhoneNumber = Input.PhoneNumber;
+        user.DateOfBirth = Input.DateOfBirth;
+
+        var currentRoles = await UserManager.GetRolesAsync(user);
+
+        var role = await RolesService.GetByNameAsync(Input.Role);
+        var roleRemove = currentRoles.Except(new[] { Input.Role }).ToList();
+
+        var res = await UserManager.RemoveFromRolesAsync(user, roleRemove);
+        if (!currentRoles.Contains(Input.Role))
+        {
+
+            var addRoleResult = await UserManager.AddToRoleAsync(user, Input.Role);
+            if (!addRoleResult.Succeeded)
+            {
+                identityErrors = addRoleResult.Errors;
+                RedirectManager.RedirectToCurrentPageWithStatus("Błąd: Nie udało się dodać nowej roli.", HttpContext);
+                return;
+            }
+        }
+        var updateResult = await UserManager.UpdateAsync(user);
+        if (Input.PhoneNumber != phoneNumber)
+        {
+
+            if (!updateResult.Succeeded)
+            {
+                RedirectManager.RedirectToCurrentPageWithStatus("Błąd: Nie udało się ustawić numeru telefonu.", HttpContext);
+            }
+        }
+
+        await SignInManager.RefreshSignInAsync(user);
+        RedirectManager.RedirectToCurrentPageWithStatus("Twój profil został zaktualizowany", HttpContext);
+    }
+
+    private sealed class InputModel : IInputModel
+    {
+        [Phone]
+        [Display(Name = "Numer telefonu")]
+        public string? PhoneNumber { get; set; }
+        public DateOnly? DateOfBirth { get; set; }
+        public string? Role { get; set; }
+    }
+}

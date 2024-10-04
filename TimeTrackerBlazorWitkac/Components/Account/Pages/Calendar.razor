@@ -1,0 +1,25 @@
+﻿@page "/"
+
+@attribute [StreamRendering(true)]
+@attribute [Authorize]
+
+<div>
+    <EventComponent role="@role" user="@user" />
+</div>
+
+@code {
+    private UserEntity user = default!;
+    private string? role;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        var userRole = await UserManager.GetRolesAsync(user);
+        role = userRole.FirstOrDefault();
+    }
+}
+
+

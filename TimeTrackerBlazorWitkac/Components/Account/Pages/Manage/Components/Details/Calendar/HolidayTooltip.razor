@@ -1,0 +1,22 @@
+﻿
+<RadzenStack Orientation="Radzen.Orientation.Vertical" Gap="0" class="rz-p-6" Style="min-width: 250px; max-width: 500px;">
+    <RadzenText TextStyle="TextStyle.H6" class="rz-mb-4" Style="color: black">
+        @Name
+    </RadzenText>
+    <RadzenStack Orientation="Radzen.Orientation.Horizontal" Gap="4px">
+        <RadzenText TextStyle="TextStyle.Body2" Style="color: black; width: auto;">
+            <strong>Początek: </strong>
+        </RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Style="color: black;">
+            @StartDate.ToString("dddd, MMMM d")
+        </RadzenText>
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public string Name { get; set; }
+    [Parameter]
+    public DateTime StartDate { get; set; }
+
+}

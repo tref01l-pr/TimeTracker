@@ -1,0 +1,78 @@
+﻿<RadzenStack Orientation="Radzen.Orientation.Vertical" Gap="0" class="rz-p-6" Style="min-width: 250px; max-width: 500px;">
+    <RadzenText TextStyle="TextStyle.H4" class="rz-mb-4" Style="color: black">
+        @Reason
+        @if (WorkDay != null)
+        {
+            var iconToDisplay = WorkDay.icons.FirstOrDefault(item =>
+            item.ConfirmationStatus == WorkDay.IsFullyConfirmed &&
+            item.StatusOfDates == WorkDay.StatusOfDates && item.StatusOfType == WorkDay.StatusOfType);
+
+            if (iconToDisplay != null)
+            {
+                <Icon Name="@iconToDisplay.IconName" Size="IconSize.x3"></Icon>
+                
+            }
+        }
+    </RadzenText>
+
+    <RadzenStack Orientation="Radzen.Orientation.Horizontal" Gap="4px">
+        <RadzenText TextStyle="TextStyle.Body2" Style="color: black; width: auto;">
+            <strong>Początek: </strong>
+        </RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Style="color: black;">
+            @StartDate.ToString("dddd, MMMM d")
+        </RadzenText>
+    </RadzenStack>
+
+    <RadzenStack Orientation="Radzen.Orientation.Horizontal" Gap="4px">
+        <RadzenText TextStyle="TextStyle.Body2" Style="color: black; width: auto;">
+            <strong>Koniec: </strong>
+        </RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Style="color: black;">
+            @EndDate.ToString("dddd, MMMM d")
+        </RadzenText>
+    </RadzenStack>
+
+    <RadzenStack Orientation="Radzen.Orientation.Horizontal" Gap="4px">
+        <RadzenText TextStyle="TextStyle.Body2" Style="color: black; width: auto;">
+            <strong>Status: </strong>
+        </RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Style="color: black;">
+            @TextStatus
+        </RadzenText>
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public string Reason { get; set; }
+
+    [Parameter]
+    public DateTime StartDate { get; set; }
+
+    [Parameter]
+    public DateTime EndDate { get; set; }
+
+    [Parameter]
+    public WorkDayResponse WorkDay { get; set; }
+
+    private string TextStatus { get; set; }
+
+    protected override void OnInitialized()
+    {
+        UpdateTextStatus();
+    }
+
+    private void UpdateTextStatus()
+    {
+        var statusItem = WorkDay.icons.FirstOrDefault(item =>
+            item.ConfirmationStatus == WorkDay.IsFullyConfirmed &&
+            item.StatusOfDates == WorkDay.StatusOfDates && item.StatusOfType == WorkDay.StatusOfType
+        );
+
+        if (statusItem != null)
+        {
+            TextStatus = statusItem.Text;
+        }
+    }
+}

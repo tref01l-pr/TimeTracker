@@ -1,0 +1,29 @@
+﻿@rendermode InteractiveServer
+
+<CascadingValue Name="User" Value="@user">
+    <div style="width: 1330px; margin: 0 auto;">
+        <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Start" class="mb-4">
+            <RadzenColumn class="scheduler-column">
+                <ProfileDetail role="@role" />
+            </RadzenColumn>
+            <RadzenColumn class="scheduler-column">
+                <CardSwipe />
+            </RadzenColumn>
+        </RadzenRow>
+    </div>
+    <ChildCalendarByUserView />
+</CascadingValue>
+
+<style>
+    .scheduler {
+        height: 900px;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public UserEntity user { get; set; } = default!;
+
+    [Parameter]
+    public IList<string> role { get; set; }
+}

@@ -1,0 +1,186 @@
+﻿@rendermode InteractiveServer
+@implements IDisposable
+
+
+<div class="auto-hiding-nav-menu"
+     @onmouseover="() => ExpandNavMenu()"
+     @onmouseout="() => CollapseNavMenu()">
+    <nav class="flex-column nav-menu @(collapseNavMenu ? "collapsed" : "expand")">
+        <AuthorizeView>
+            <Authorized>
+                <NavLink class="nav-link" href="Account/Manage" Match="NavLinkMatch.All">
+                    <span class="bi bi-house nav-item-icon" aria-hidden="true">
+                        <span class="nav-item-text">Home</span>
+                    </span>
+                </NavLink>
+                <NavLink class="nav-link" href="/">
+                    <span class="bi bi-calendar nav-item-icon">
+                        <span class="nav-item-text">Kalendarz</span>
+                    </span>
+                </NavLink>
+                <NavLink class="nav-link" href="/Account/Calendar">
+                    <span class="bi bi-person-workspace nav-item-icon">
+                        <span class="nav-item-text">Mój profil</span>
+                    </span>
+                </NavLink>
+                <AuthorizeView Roles="Admin" Context="innerContext">
+                    <NavLink class="nav-link" href="/user-search">
+                        <span class="bi bi-search nav-item-icon">
+                            <span class="nav-item-text">Wyszukiwanie</span>
+                        </span>
+                    </NavLink>
+                </AuthorizeView>
+
+                <form action="Account/Logout" method="post">
+                    <AntiforgeryToken />
+                    <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                    <button type="submit" class="nav-link">
+                        <span class="nav-item-text">Wylogowanie</span>
+                    </button>
+                </form>
+
+
+            </Authorized>
+            <NotAuthorized>
+                <NavLink class="nav-link" href="Account/Register">
+                    <span class="bi bi-person nav-item-icon" aria-hidden="true"></span>
+                    <span class="nav-item-text">Rejestracja</span>
+                </NavLink>
+                <NavLink class="nav-link" href="Account/Login">
+                    <span class="bi bi-person-add nav-item-icon" aria-hidden="true"></span>
+                    <span class="nav-item-text">Logowanie</span>
+                </NavLink>
+            </NotAuthorized>
+        </AuthorizeView>
+    </nav>
+
+</div>
+
+<style>
+    .nav-link {
+        margin-bottom: 10px;
+    }
+
+    .expand .nav-link {
+        margin-bottom: 18px;
+    }
+    
+    .auto-hiding-nav-menu {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        position: relative;
+        transition: max-width 0.3s ease;
+        background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+        color: #fff;
+        padding: 1rem;
+    }
+    
+    .nav-menu {
+        overflow: hidden;
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+    
+    .collapsed {
+        width: 25px;
+    }
+    
+    .expand {
+        width: 150px;
+    }
+    
+    
+    .nav-item-text {
+        visibility: hidden;
+        position: absolute;
+        margin-left: 0.5rem;
+        font-size: 16px;
+        margin-top: 4px;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        transform-origin: left center;
+    }
+    
+    .expand .nav-item-text {
+        visibility: visible;
+        opacity: 0.5;
+    }
+    
+    .nav-link:hover .nav-item-text {
+        opacity: 1;
+        transform: scale(1.2);
+        color: #DAF7A6;
+    }
+    
+    .nav-item {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+    }
+    
+    .nav-item-icon {
+        color: white;
+        font-size: 20px;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        transform-origin: left center;
+        margin-bottom: 5px;
+    }
+    
+    .nav-link:hover .nav-item-icon {
+        color: #DAF7A6;
+        transform: scale(1.2);
+    }
+    
+    .nav-link > * {
+        align-self: flex-start;
+    }
+</style>
+
+@code {
+    private bool collapseNavMenu = true;
+    private bool isHovered = false;
+    private string? currentUrl;
+    private IDisposable? authStateChangedSubscription;
+    protected override async Task OnInitializedAsync()
+    {
+
+      
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+        if (NavigationManager.BaseUri == "Account/Logout")
+        {
+            HttpContextAccessor.HttpContext.Response.Cookies.Delete("Token");
+            NavigationManager.NavigateTo(NavigationManager.BaseUri, true);
+        }
+        
+
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+    private void ExpandNavMenu()
+    {
+        isHovered = true;
+        if (collapseNavMenu) collapseNavMenu = false;
+        StateHasChanged();
+    }
+    private void OnNavChanged(object? sender, EventArgs e)
+      => this.InvokeAsync(StateHasChanged);
+
+    private void CollapseNavMenu()
+    {
+        isHovered = false;
+        if (!collapseNavMenu) collapseNavMenu = true;
+        StateHasChanged();
+    }
+
+}

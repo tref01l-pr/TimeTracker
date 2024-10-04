@@ -1,0 +1,80 @@
+﻿@inject IUserCardsService UserCardService
+@inject IJSRuntime JSRuntime
+
+<div class="mt-3">
+    <div class="input-group mt-4">
+        <span class="input-group-text" id="basic-addon1">
+            <Icon Name="IconName.CardHeading" Size="IconSize.x3" />
+        </span>
+        <InputText @bind-Value="model.UserCardNumber" type="text" class="form-control" placeholder="Card Id" aria-label="Card" aria-describedby="basic-addon1" disabled />
+    </div>
+
+    <div class="mt-3">
+       <UserCardSelector model="model" CardChange="OnCardChange" />
+
+    </div>
+
+    <div class="mt-3">
+        @if (model.IsClockedIn)
+        {
+            <div>
+
+                <h4>Szczegóły obecności</h4>
+                <p>Czas rozpoczęcia: @model.Attendance.StartDate @model.Attendance.StartHour:@model.Attendance.StartMinute</p>
+
+            </div>
+        }
+        else
+        {
+            <div>
+                <h4>Nieobecny</h4>
+            </div>
+        }
+        <div class="mt-3">
+            <button class="btn btn-primary" @onclick="ClockIn" disabled="@model.IsClockedIn">Odbić przyjście</button>
+            @if (model.IsClockedIn)
+            {
+                <button class="btn btn-danger m-2" @onclick="ClockOut">Odbić wyjście</button>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public CardSwipeModel model { get; set; }
+    [Parameter]
+    public EventCallback OnClockIn { get; set; }
+    [Parameter]
+    public EventCallback OnClockOut { get; set; }
+    [Parameter]
+    public EventCallback OnHandleCardPunch { get; set; }
+    [Parameter]
+    public EventCallback<ChangeEventArgs> OnCardChange { get; set; }
+    [Parameter]
+    public UserEntity? user { get; set; } = default!;
+
+
+    public async Task ClockIn()
+    {
+        await OnClockIn.InvokeAsync();
+        StateHasChanged();
+
+    }
+
+    public async Task ClockOut()
+    {
+        await OnClockOut.InvokeAsync();
+        StateHasChanged();
+    }
+
+    private async Task CardChange(ChangeEventArgs e)
+    {
+        await OnCardChange.InvokeAsync(e);
+    }
+
+    private async Task HandleCardPunch()
+    {
+        await OnHandleCardPunch.InvokeAsync();
+    }
+}

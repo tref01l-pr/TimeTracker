@@ -1,0 +1,29 @@
+﻿@page "/Account/ConfirmEmail"
+@using TimeTrackerBlazorWitkac.AlertMessages.SuccessMessages
+
+<PageTitle>Potwierdź e-maill</PageTitle>
+
+<h1>Potwierdź e-mail</h1>
+<StatusMessage Message="@statusMessage"/>
+
+@code {
+    private string? statusMessage;
+
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromQuery] private string? UserId { get; set; }
+
+    [SupplyParameterFromQuery] private string? Code { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserId is null || Code is null)
+        {
+            RedirectManager.RedirectTo("");
+        }
+        var result = await AuthorizationService.VerifyEmailConfirmationTokenAsync(UserId, Code);
+        statusMessage = result.IsFailure
+            ? result.Error
+            : AuthorizationSuccessMessages.EmailConfirmationSuccess.GetDescription();
+    }
+}

@@ -1,0 +1,303 @@
+﻿@page "/UserDetails/{UserEmail}"
+@attribute [Authorize(Roles = "Admin")]
+
+@using TimeTrackerBlazorWitkac.AlertMessages.SuccessMessages
+@using TimeTrackerBlazorWitkac.AlertMessages.ErrorMessages.InputModels
+@using TimeTrackerBlazorWitkac.AlertMessages.ErrorMessages.Services.Application
+
+@inject IToastNotificationService ToastService
+
+@rendermode InteractiveServer
+
+@if (userDetails == null)
+{
+    <h5>@error</h5>
+}
+else
+{
+    <div class="container mt-4">
+        <!-- User Information -->
+        <h3>User Details</h3>
+        <div class="card mb-4">
+            <div class="card-body">
+                <h4 class="card-title">@userDetails.UserName</h4>
+                <p class="card-text">
+                    <strong>E-mail:</strong> @userDetails.Email
+                </p>
+            </div>
+        </div>
+
+        <!-- User Cards -->
+        <h4 class="mb-3">Karty użytkownika</h4>
+        <HasRoleView role="@role" user="@user">
+            <Button class="mb-3" Color="ButtonColor.Primary" @onclick="OnShowModalClick">Utwórz kartę użytkownika</Button>
+        </HasRoleView>
+         
+        @foreach (var card in userDetails.UserCards)
+        {
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">@card.Name</h5>
+                    <p class="card-text">
+                        <strong>Numer:</strong> @card.Number
+                    </p>
+                    <p class="card-text">
+                        <strong>Typ karty:</strong> @card.CardType
+                    </p>
+                    <p class="card-text">
+                        <strong>Utworzono w:</strong> @card.CreatedAt
+                    </p>
+                    <p class="card-text">
+                        <strong>Firma:</strong> @card.Company.Name
+                    </p>
+                    <p class="card-text">
+                        <strong>Stan:</strong>
+                        <span class="badge @(card.IsActive ? "bg-success" : "bg-danger")">
+                            @(card.IsActive ? "Aktywny" : "Nieaktywny")
+                        </span>
+                    </p>
+                    <HasRoleView role="@role" user="@user">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button class="btn @(card.IsActive ? "btn-danger" : "btn-success")"
+                                        @onclick="() => ToggleCardStatus(card.Id)">
+                                    @(card.IsActive ? "Dezaktywuj" : "Aktywuj")
+                                </button>
+                            </div>
+                            <div>
+                                <button class="btn btn-danger"
+                                        @onclick="() => DeleteUserCard(card.Id)">
+                                    Usuń
+                                </button>
+                            </div>
+                        </div>
+                    </HasRoleView>
+                    
+                </div>
+            </div>
+        }
+
+
+    </div>
+}
+
+<Modal @ref="modal" Title="Create User Card">
+
+    <BodyTemplate>
+        <EditForm Model="Input" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator/>
+            <ValidationSummary/>
+            <div class="mb-3">
+                <label for="exampleInputNumber1" class="form-label">Numer karty</label>
+                <InputText @bind-Value="Input.Number" type="text" class="form-control" id="exampleInputNumber1"></InputText>
+            </div>
+
+            <div class="mb-3">
+                <label for="exampleInputCheck2" class="form-label">Typ karty</label>
+                <InputRadioGroup @bind-Value="Input.CardType" Name="cardTypeRadios">
+                    @foreach (var cardType in Enum.GetValues(typeof(CardType)))
+                    {
+                        <div class="form-check">
+                            <InputRadio Value="cardType" class="form-check-input" name="cardTypeRadios"></InputRadio>
+                            <label class="form-check-label" for="exampleInputCheck1">
+                                @cardType.ToString()
+                            </label>
+                        </div>
+                    }
+                </InputRadioGroup>
+            </div>
+
+            <div class="mb-3">
+                <label for="exampleInputCheck3" class="form-label">Firma</label>
+                <InputRadioGroup @bind-Value="Input.CompanyId" Name="companyRadios">
+                    @foreach (var company in companies)
+                    {
+                        <div class="form-check">
+                            <InputRadio Value="company.Id" class="form-check-input" name="companyRadios"></InputRadio>
+                            <label class="form-check-label" for="exampleInputCheck1">
+                                @company.Name
+                            </label>
+                        </div>
+                    }
+                </InputRadioGroup>
+            </div>
+
+
+            <div class="d-flex justify-content-between">
+                <Button Color="ButtonColor.Secondary" style="width: 100%" class="me-2" @onclick="OnHideModalClick">Zamknij</Button>
+                <Button Type="BlazorBootstrap.ButtonType.Submit" Color="ButtonColor.Primary" style="width: 100%" class="ms-2">Utwórz</Button>
+            </div>
+        </EditForm>
+    </BodyTemplate>
+
+</Modal>
+
+@code {
+    private Modal modal;
+
+    private async Task OnShowModalClick()
+    {
+        await modal?.ShowAsync();
+    }
+
+    private async Task OnHideModalClick()
+    {
+        await modal?.HideAsync();
+        ResetInputs();
+    }
+
+    [Parameter]
+    public string? UserEmail { get; set; }
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    InputModel Input { get; set; } = new();
+
+    private string? error = null;
+
+    private IList<Company> companies = new List<Company>();
+
+    private UserDetailsResponse? userDetails;
+    private UserEntity? user;
+    private string role;
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpContextAccessor.HttpContext != null)
+        {
+            user = await UserAccessor.GetRequiredUserAsync(HttpContextAccessor.HttpContext);
+            var userRoles = await UserManager.GetRolesAsync(user);
+            role = userRoles.FirstOrDefault();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var result = await UsersService.GetByEmailAsync<UserDetailsResponse>(UserEmail);
+        if (result.IsFailure)
+        {
+            error = result.Error;
+            return;
+        }
+        
+        if (result.Value == null)
+        {
+            error = UsersServiceErrorMessages.NotFoundError.GetDescription();
+            return;
+        }
+
+        result.Value.UserCards.Reverse();
+        userDetails = result.Value;
+        var companiesResult = await CompaniesService.GetAllAsync<Company>();
+        if (companiesResult.IsFailure)
+        {
+            error = companiesResult.Error;
+            return;
+        }
+
+        companies = companiesResult.Value;
+    }
+
+    private async Task ToggleCardStatus(int cardId)
+    {
+        var result = await UserCardsService.ToggleIsActiveAsync(cardId);
+
+        if (result.IsFailure)
+        {
+            ToastService.ShowSuccess(result.Error);
+        }
+        else
+        {
+            userDetails.UserCards.FirstOrDefault(u => u.Id == cardId).IsActive = result.Value;
+
+            ToastService.ShowSuccess(UserCardSuccessMessages.ToggleIsActiveSuccess.GetDescription());
+        }
+    }
+
+    private async Task DeleteUserCard(int cardId)
+    {
+        var userCard = userDetails.UserCards.FirstOrDefault(uc => uc.Id == cardId);
+        if (userCard == null)
+        {
+            ToastService.ShowError(UserCardsServiceErrorMessages.UserCardNotFound.GetDescription());
+            return;
+        }
+
+        var result = await UserCardsService.DeleteByIdAsync(user.Id, cardId);
+
+        if (result.IsFailure)
+        {
+            ToastService.ShowError(result.Error);
+        }
+        else
+        {
+            userDetails.UserCards.Remove(userCard);
+            ToastService.ShowSuccess(UserCardSuccessMessages.DeleteSuccess.GetDescription());
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (Input.CardType == null)
+        {
+            ToastService.ShowError(CreateUserCardInputModelErrorMessages.CardTypeNotSelected.GetDescription());
+            return;
+        }
+
+        if (Input.CompanyId == null)
+        {
+            ToastService.ShowError(CreateUserCardInputModelErrorMessages.CompanyNotSelected.GetDescription());
+            return;
+        }
+
+        var card = UserCard.Builder()
+            .SetUserId(userDetails.Id)
+            .SetCompanyId(Input.CompanyId.Value)
+            .SetNumber(Input.Number)
+            .SetCardType(Input.CardType.Value)
+            .Build();
+
+        if (card.IsFailure)
+        {
+            ToastService.ShowError(card.Error);
+            return;
+        }
+
+        OnHideModalClick();
+
+        var result = await UserCardsService.CreateAsync<UserCardResponse>(card.Value);
+        if (result.IsFailure)
+        {
+            ToastService.ShowError(result.Error);
+            return;
+        }
+        
+        userDetails.UserCards.Insert(0, result.Value);
+
+        ToastService.ShowSuccess(UserCardSuccessMessages.CreateSuccess.GetDescription());
+    }
+
+    private void ResetInputs()
+    {
+        Input.Number = "";
+        Input.CardType = null;
+        Input.CompanyId = null;
+    }
+
+    private sealed class InputModel
+    {
+        [Required(ErrorMessage = "Numer jest wymagany!")]
+        public string Number { get; set; }
+
+        [Required(ErrorMessage = "Typ karty jest wymagany!")]
+        public CardType? CardType { get; set; }
+
+        [Required(ErrorMessage = "Firma jest wymagana!")]
+        public int? CompanyId { get; set; }
+    }
+    
+}

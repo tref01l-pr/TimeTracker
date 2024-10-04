@@ -1,0 +1,27 @@
+﻿@if (data != null)
+{
+    var iconToDisplay = data.icons.FirstOrDefault(item =>
+    item.ConfirmationStatus == data.IsFullyConfirmed &&
+    (item.StatusOfDates == data.StatusOfDates && item.StatusOfType == data.StatusOfType)
+    );
+
+    if (iconToDisplay != null)
+    {
+        <Icon Name="@iconToDisplay.IconName" Size="IconSize.x5" />
+    }
+    if (data.IsFullDate == false)
+    {
+        <Icon Name="IconName.Clock" />
+    }
+    @if (data.AbsenceType != null &&
+(data.AbsenceType.Name == AbsenceTypeStrings.Household.GetDescription() || data.AbsenceType.Name == AbsenceTypeStrings.RemoteWork.GetDescription()))
+    {
+        <Icon Name="data.AbsenceType.Icon" />
+    }
+    <span>@data.TextByCalendarUser</span>
+}
+
+@code {
+    [Parameter]
+    public WorkDayResponse data { get; set; }
+}

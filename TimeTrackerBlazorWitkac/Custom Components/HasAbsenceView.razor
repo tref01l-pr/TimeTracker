@@ -1,0 +1,16 @@
+﻿@using TimeTrackerBlazorWitkac.Components.Account.Pages.Manage.Components.Models
+@if (models?.Absence != null)
+{
+    @ChildContent
+}
+else
+{
+    <p>Dane niedostępne.</p>
+}
+@code {
+    [Parameter, EditorRequired]
+    public DetailAbsencesModel models { get; set; }
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; set; }
+
+}

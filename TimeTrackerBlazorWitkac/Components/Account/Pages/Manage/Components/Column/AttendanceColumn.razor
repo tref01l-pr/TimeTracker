@@ -1,0 +1,45 @@
+﻿
+<div>
+    <span style="color: white; font-weight: 700;">
+        @TimeRange()
+    </span>
+    <br />
+    <span style="font-size: 0.9em;">
+        Czas w pracy: @TimeDuration()
+    </span>
+
+    <br />
+
+
+</div>
+@code {
+    [Parameter]
+    public WorkDayResponse data { get; set; }
+
+
+    private bool HasEndDate()
+    {
+        return data.EndDate.HasValue;
+    }
+    private string TimeRange()
+    {
+        var starTime = $"{data.StartDate.Hour:D2} : {data.StartDate.Minute:D2}";
+        var endTime = HasEndDate()
+    ? $"{data.EndDate.Value.Hour:D2}:{data.EndDate.Value.Minute:D2}"
+    : string.Empty;
+        return $"{starTime} - {endTime}";
+    }
+    private string TimeDuration()
+    {
+        return HasEndDate() ? TotalTime(data.StartDate, data.EndDate.Value) : string.Empty;
+    }
+    private string TotalTime(DateTime StartDate, DateTime EndDate)
+    {
+        var totalHours = (EndDate - StartDate).TotalHours;
+        var hours = (int)totalHours;
+        var minutes = (int)((totalHours - hours) * 60);
+
+        return $"{hours.ToString("D2")} : {minutes.ToString("D2")} ";
+    }
+
+}

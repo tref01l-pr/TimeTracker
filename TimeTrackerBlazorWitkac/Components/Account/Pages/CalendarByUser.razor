@@ -1,0 +1,34 @@
+﻿@page "/Account/Calendar"
+@attribute [Authorize]
+
+@layout LoaderLayout
+<PageTitle>Calendar Profile</PageTitle>
+<StatusMessage />
+
+<div>
+    <CalendarByUserView user="@user" role="@role" />
+</div>
+
+@code {
+    private UserEntity user = default!;
+    private IList<string>? role;
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        role = await GetUserRole();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            user = await UserManager.GetUserAsync(authState.User);
+        }
+    }
+
+    private async Task<IList<string>?> GetUserRole()
+    {
+        var userRole = await UserManager.GetRolesAsync(user);
+        return userRole;
+    }
+}

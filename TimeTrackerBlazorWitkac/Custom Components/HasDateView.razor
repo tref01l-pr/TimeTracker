@@ -1,0 +1,12 @@
+﻿@if (model != null && model.EndDate.HasValue && model.StartDate.Date == model.EndDate.Value.Date)
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public WorkDayResponse model { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; set; } = default!;
+}

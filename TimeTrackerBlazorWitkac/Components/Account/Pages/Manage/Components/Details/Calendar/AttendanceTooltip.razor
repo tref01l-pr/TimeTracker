@@ -1,0 +1,37 @@
+﻿<RadzenStack Orientation="Radzen.Orientation.Vertical" Gap="0" class="rz-p-6" Style="min-width: 250px; max-width: 500px;">
+    <RadzenText TextStyle="TextStyle.H6" class="rz-mb-4" Style="color: black">
+        Razem : @TotalTime()
+    </RadzenText>
+    <RadzenStack Orientation="Radzen.Orientation.Horizontal" Gap="4px">
+        <RadzenText TextStyle="TextStyle.Body2" Style="color: black; width: auto;">
+            <strong>Początek: </strong>
+        </RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Style="color: black;">
+            @StartDate.ToString("HH:mm")
+        </RadzenText>
+    </RadzenStack>
+    <RadzenStack Orientation="Radzen.Orientation.Horizontal" Gap="4px">
+        <RadzenText TextStyle="TextStyle.Body2" Style="color: black; width: auto;">
+            <strong>Koniec: </strong>
+        </RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Style="color: black;">
+            @EndDate.ToString("HH:mm")
+        </RadzenText>
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public DateTime StartDate { get; set; }
+    [Parameter]
+    public DateTime EndDate { get; set; }
+
+    private string TotalTime()
+    {
+        var totalHours = (EndDate - StartDate).TotalHours;
+        var hours = (int)totalHours;
+        var minutes = (int)((totalHours - hours) * 60);
+
+        return $"{hours} godziny {minutes} minuty";
+    }
+}

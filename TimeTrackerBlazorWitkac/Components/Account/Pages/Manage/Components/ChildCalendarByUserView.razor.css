@@ -1,0 +1,23 @@
+﻿body {
+}
+
+::deep.container {
+}
+
+::deep.scheduler {
+    height: 768px;
+}
+
+::deep.attribute {
+    background: var(--rz-scheduler-highlight-background-color, rgba(255,220,40,.2));
+}
+
+.Holiday {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+    .Holiday::after {
+        content: attr(after-text);
+    }

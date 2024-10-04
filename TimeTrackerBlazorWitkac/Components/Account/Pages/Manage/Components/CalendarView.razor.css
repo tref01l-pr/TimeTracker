@@ -1,0 +1,13 @@
+﻿body {
+}
+
+::deep.container {
+}
+
+.scheduler {
+    height: 200px;
+}
+
+::deep.attribute {
+    background: var(--rz-scheduler-highlight-background-color, rgba(255,220,40,.2));
+}

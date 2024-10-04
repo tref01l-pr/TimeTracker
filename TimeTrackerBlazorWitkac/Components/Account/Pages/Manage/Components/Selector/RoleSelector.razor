@@ -1,0 +1,16 @@
+﻿<InputSelect @bind-Value="Input.Role" class="form-control" aria-required="true" placeholder="Role">
+    @foreach (var role in Roles)
+    {
+        <option value="@role">@role</option>
+    }
+</InputSelect>
+<label for="Role">Role</label>
+<ValidationMessage For="() => Input.Role" class="text-danger" />
+
+@code {
+    [Parameter]
+    public IInputModel Input { get; set; }
+
+    [Parameter]
+    public IList<string> Roles { get; set; } = new List<string>();
+}

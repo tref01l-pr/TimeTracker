@@ -1,0 +1,78 @@
+﻿@page "/Account/Manage/DeletePersonalData"
+
+@inject ILogger<DeletePersonalData> Logger
+
+<PageTitle>Usuwanie danych osobowych</PageTitle>
+
+<StatusMessage Message="@message" />
+
+<h3>Usuwanie danych osobowych</h3>
+
+<div class="alert alert-warning" role="alert">
+    <p>
+        <strong>Usunięcie tych danych spowoduje trwałe usunięcie konta i nie będzie można ich odzyskać.</strong>
+    </p>
+</div>
+
+<div>
+    <EditForm Model="Input" FormName="delete-user" OnValidSubmit="OnValidSubmitAsync" method="post">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" role="alert" />
+        @if (requirePassword)
+        {
+            <div class="form-floating mb-3">
+                <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="Wprowadź hasło." />
+                <label for="password" class="form-label">Hasło</label>
+                <ValidationMessage For="() => Input.Password" class="text-danger" />
+            </div>
+        }
+        <button class="w-100 btn btn-lg btn-danger" type="submit">Usunięcie danych i zamknięcie konta</button>
+    </EditForm>
+</div>
+
+@code {
+    private string? message;
+    private UserEntity _userEntity = default!;
+    private bool requirePassword;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Input ??= new();
+        _userEntity = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        requirePassword = await UserManager.HasPasswordAsync(_userEntity);
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        if (requirePassword && !await UserManager.CheckPasswordAsync(_userEntity, Input.Password))
+        {
+            message = "Błąd: Nieprawidłowe hasło.";
+            return;
+        }
+
+        var result = await UserManager.DeleteAsync(_userEntity);
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException("Wystąpił nieoczekiwany błąd podczas usuwania użytkownika.");
+        }
+
+        await SignInManager.SignOutAsync();
+
+        var userId = await UserManager.GetUserIdAsync(_userEntity);
+        Logger.LogInformation("Użytkownik o identyfikatorze '{UserId}' usunął się.", userId);
+
+        RedirectManager.RedirectToCurrentPage();
+    }
+
+    private sealed class InputModel
+    {
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+    }
+}

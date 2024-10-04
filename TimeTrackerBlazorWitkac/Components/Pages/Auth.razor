@@ -1,0 +1,13 @@
+﻿@page "/auth"
+
+
+
+@attribute [Authorize]
+
+<PageTitle>Auth</PageTitle>
+
+<h1>Użytkownik jest uwierzytelniony</h1>
+
+<AuthorizeView>
+    Hello @context.User.Identity?.Name!
+</AuthorizeView>

@@ -1,0 +1,47 @@
+﻿@using TimeTrackerBlazorWitkac.Data.Models
+@using TimeTrackerBlazorWitkac.Data.Entities
+@rendermode InteractiveServer
+
+<div class="container">
+
+    <div class="calendar">
+        <div class="container mt-3">
+            <div class="d-flex justify-content-between align-items-center">
+              
+                <h2>Kalendarz</h2>
+                <Tooltip Title="Kliknij i przeciągnij na kalendarzu aby wybrać dni wolne" role="button">
+                    <Icon Name="IconName.QuestionCircle" Size="IconSize.x3" /> 
+                </Tooltip>
+            </div>
+            <hr />
+            <CascadingValue Name="User" Value="@user">
+                <CalendarView />
+            </CascadingValue>
+        </div>
+    </div>
+      
+</div>
+<style>
+   
+    .text-underline span, .text-underline .question-button {
+        text-decoration: underline;
+    }
+
+  
+    .question-button {
+        color: inherit; 
+        text-decoration: underline; 
+    }
+
+        
+        .question-button:hover {
+            color: inherit; 
+            text-decoration: underline; 
+        }
+</style>
+@code {
+    [Parameter]
+    public UserEntity? user { get; set; } = default!;
+    [Parameter]
+    public string? role { get; set; }
+}

@@ -1,0 +1,56 @@
+﻿@using BlazorBootstrap
+@using Microsoft.AspNetCore.Components.Authorization
+@using TimeTrackerBlazorWitkac.Contracts.Responses
+@using TimeTrackerBlazorWitkac.Data.Entities
+@using TimeTrackerBlazorWitkac.Interfaces.Services.Application
+@inject IUserCardsService UserCardsService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<AuthorizeView>
+    <Authorized>
+        @if (hasCards)
+        {
+            @ChildContent
+        }
+        else
+        {
+            <hr />
+            <div class="d-flex justify-content-between align-items-center mt-4">
+
+                <p>Brak dostępnych kart</p>
+                <Tooltip class="mb-3" Title="Aby fragment był dostępny, dodaj kartę do <b>Wyszukiwania</b>" role="button" IsHtml="true">
+                    <Icon Name="IconName.QuestionCircle" Size="IconSize.x3" />
+                </Tooltip>
+            </div>
+
+        }
+    </Authorized>
+    <NotAuthorized>
+        <p>Brak dostępu</p>
+
+
+    </NotAuthorized>
+</AuthorizeView>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; set; }
+
+    [Parameter, EditorRequired]
+    public UserEntity user { get; set; } = default!;
+
+    private bool hasCards;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        if (authState.User.Identity.IsAuthenticated)
+        {
+            var result = await UserCardsService.GetByUserAsync<UserCardResponse>(user.Id);
+            hasCards = result.IsSuccess && result.Value.Count > 0;
+        }
+
+    }
+}

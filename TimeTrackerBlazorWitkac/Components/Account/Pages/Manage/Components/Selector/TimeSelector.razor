@@ -1,0 +1,18 @@
+﻿@typeparam TValue
+
+<label class="form-select-label fw-normal mb-1" for="flexSelectDefault">
+    @model.Label
+</label>
+<InputSelect @bind-Value="model.Value" class="form-select">
+    @foreach (var items in model.Values)
+    {
+        <option value="@items">@items</option>
+    }
+</InputSelect>
+<ValidationMessage For="() => model.Value" class="text-danger" />
+
+
+@code {
+    [Parameter]
+    public TimeSelectorModel<TValue> model { get; set; } = new TimeSelectorModel<TValue>();
+}

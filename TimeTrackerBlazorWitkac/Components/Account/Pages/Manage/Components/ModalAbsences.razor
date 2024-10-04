@@ -1,0 +1,109 @@
+@inject IModalAbsencesService ModalAbsencesService
+@inject IToastNotificationService ToastNotificationService
+@rendermode InteractiveServer
+
+<div>
+    <RadzenTemplateForm TItem="WorkDayResponse" Data="@model" Submit="HandleSubmit">
+        <RadzenStack Gap="1rem">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+            <div class="row">
+                <div class="col-auto mb-3">
+                    <label for="exampleStart">Data rozpoczęcia</label>
+                    <DateInput Disabled="parameters.Disabled" TValue="DateTime" @bind-Value="@model.StartDate" Placeholder="Wprowadź datę" />
+                    <ValidationMessage For="() => model.StartDate" class="text-danger" />
+                </div>
+                <div class="col-auto mb-3">
+                    <label for="exampleEnd">Data zakończenia</label>
+                    <DateInput Disabled="parameters.Disabled" TValue="DateTime?" @bind-Value="@model.EndDate" Placeholder="Wprowadź datę" />
+                    <ValidationMessage For="() => model.EndDate" class="text-danger" />
+                </div>
+            </div>
+            <HasDateView model="model">
+                <div class="form-check">
+                    <InputCheckbox @bind-Value="parameters.IsFullDate" class="form-check-input" id="flexCheckDefault" />
+                    <label class="form-check-label" for="flexCheckDefault">Całodzienny</label>
+                </div>
+                @if (!parameters.IsFullDate)
+                {
+                    <div class="row">
+                        <div class="col-md-6">
+                            <TimeSelector TValue="int" model="@parameters.startHourSelector" />
+                            <TimeSelector TValue="int" model="@parameters.endHourSelector" />
+                        </div>
+                        <div class="col-md-6">
+                            <TimeSelector TValue="int" model="@parameters.startMinuteSelector" />
+                            <TimeSelector TValue="int" model="@parameters.endMinuteSelector" />
+                        </div>
+                    </div>
+                }
+            </HasDateView>
+            <div class="form-group mb-3">
+                <label for="exampleTextarea">Powód</label>
+                <InputTextArea @bind-Value="@model.Reason" class="form-control" id="floatingTextarea"></InputTextArea>
+                <ValidationMessage For="() => model.Reason" class="text-danger" />
+            </div>
+            <div class="form-group mb-3">
+                <label for="exampleSelect">Rodzaj nieobecności</label>
+                <InputSelect @bind-Value="@model.AbsenceTypeId" class="form-select">
+                    @foreach (var item in parameters.types)
+                    {
+                        <option value="@item.Id">@item.Name</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => model.AbsenceTypeId" class="text-danger" />
+            </div>
+            <div class="modal-footer mt-3">
+                <button @onclick="CloseModal" type="button" class="btn btn-secondary m-2">Anuluj</button>
+                <button type="submit" class="btn btn-primary">Zapisz</button>
+            </div>
+        </RadzenStack>
+    </RadzenTemplateForm>
+</div>
+
+
+@code {
+    [Parameter]
+    public AbsenceFormParameters parameters { get; set; } = new AbsenceFormParameters();
+    private WorkDayResponse model = new WorkDayResponse();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ModalAbsencesService.GetParametersSetAsync(parameters);
+    }
+
+    protected override void OnInitialized()
+    {
+        ModalAbsencesService.GetInitialize(parameters, model);
+        if (model.EndDate == null || model.EndDate.Value.Date != model.StartDate.Date)
+        {
+            model.EndDate = model.StartDate.Date;
+        }
+    }
+
+    private void CloseModal()
+    {
+        DialogService.Close();
+    }
+
+    private void OnShown()
+    {
+        parameters.IsFullDate = false;
+    }
+
+    private async void HandleSubmit(WorkDayResponse model)
+    {
+
+        var result = await ModalAbsencesService.HandleSubmit(model, parameters);
+        if (result.IsFailure)
+        {
+            ToastNotificationService.ShowError(result.Error);
+            return;
+        }
+        DialogService.Close(model);
+
+
+
+    }
+
+}

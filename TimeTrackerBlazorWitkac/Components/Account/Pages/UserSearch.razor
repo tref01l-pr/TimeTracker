@@ -1,0 +1,145 @@
+﻿@page "/user-search"
+@page "/user-search/{searchQuery}"
+@attribute [Authorize(Roles = "Admin")]
+
+@using TimeTrackerBlazorWitkac.Options
+@using TimeTrackerBlazorWitkac.AlertMessages.ErrorMessages.Services.Application
+
+@rendermode InteractiveServer
+
+
+<div class="container">
+    <div class="mt-5">
+        <h3>Wyszukiwanie użytkownika</h3>
+        <div class="row">
+            <div class="col">
+                <EditForm Model="Input" OnValidSubmit="SearchSubmit">
+                    <div class="input-group mb-3">
+                        <InputText @bind-Value="Input.UserEmail" type="text" class="form-control" placeholder="Wprowadź adres e-mail"></InputText>
+                        <button type="submit" class="btn btn-primary">Szukaj</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+
+        <div class="row">
+            @if (_page == null)
+            {
+                <span>Ładowanie...</span>
+            }
+            else if (!string.IsNullOrEmpty(error))
+            {
+                <br/>
+                <span>@error</span>
+            }
+            else if (_page.Items.Count == 0)
+            {
+                <br/>
+                <span>Nie znaleziono użytkowników.</span>
+            }
+            else
+            {
+                @foreach (var user in _page.Items)
+                {
+                    string userDetailsUrl = $"/UserDetails/{user.Email}";
+                    <div class="col-sm-12 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="card-title">
+                                            <NavLink href="@userDetailsUrl">
+                                                @user.UserName
+                                            </NavLink>
+                                        </h5>
+                                        <p class="card-text">@user.Email</p>
+                                    </div>
+
+                                    <button @onclick="() => NavigateToUserDetail(user.Email)" class="btn btn-primary">Wyświetl szczegóły</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+
+            <div class="d-flex justify-content-center">
+                <Pagination ActivePageNumber="@_currentPageNumber"
+                            TotalPages="@_totalPages"
+                            PageChanged="OnPageChangedAsync"/>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string? searchQuery { get; set; }
+    
+    [SupplyParameterFromForm]
+    InputSearchModel Input { get; set; } = new();
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? Page { get; set; }
+
+    private string? error = null;
+    private PageResponse<User>? _page = null;
+
+    private const int PageSize = 10;
+    private int _currentPageNumber;
+    private int _totalPages = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Input.UserEmail = searchQuery;
+        if (Page.HasValue && Page.Value <= 0)
+        {
+            error = UsersServiceErrorMessages.NotFoundError.GetDescription();
+            return;
+        }
+
+        _currentPageNumber = Page ?? 1;
+
+        var result = await UsersService.GetFilteredPageAsync<User>(
+            new PaginationOptions { Page = _currentPageNumber, PageSize = PageSize },
+            searchQuery,
+            CancellationToken.None);
+
+        if (result.IsFailure)
+        {
+            error = result.Error;
+        }
+        
+        _page = result.Value;
+        _totalPages = (int)Math.Ceiling(_page.TotalCount / (double)PageSize);
+    }
+
+    private async Task OnPageChangedAsync(int newPageNumber)
+    {
+        _currentPageNumber = newPageNumber;
+
+        var updatedUri = NavigationManager.GetUriWithQueryParameters(
+            new Dictionary<string, object?>
+            {
+                ["page"] = _currentPageNumber
+            });
+
+        NavigationManager.NavigateTo(updatedUri, forceLoad: true, replace: true);
+    }
+
+    private void NavigateToUserDetail(string email)
+    {
+        NavigationManager.NavigateTo($"/UserDetails/{email}");
+    }
+
+    private async Task SearchSubmit()
+    {
+        NavigationManager.NavigateTo($"/user-search/{Input.UserEmail}");
+    }
+
+    private sealed class InputSearchModel
+    {
+        public string? UserEmail { get; set; }
+    }
+}

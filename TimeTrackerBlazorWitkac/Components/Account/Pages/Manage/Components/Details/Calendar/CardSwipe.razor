@@ -1,0 +1,136 @@
+﻿@inject IUserCardsService UserCardService
+@inject IJSRuntime JSRuntime
+
+<section>
+    <div class="container">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3>Karty</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-3">
+                        <p class="mb-0">Firma</p>
+                    </div>
+                    <div class="col-sm-9">
+                        <p class="text-muted mb-0">@model.Company</p>
+                    </div>
+                </div>
+                <hr />
+                <div class="row">
+                    <div class="col-sm-3">
+                        <p class="mb-0">Numer Karty</p>
+                    </div>
+                    <div class="col-sm-9">
+                        <p class="text-muted mb-0">@model.UserCardNumber</p>
+                    </div>
+                </div>
+
+                @if (isDataLoaded)
+                {
+                    <TimeTrackerBlazorWitkac.Custom_Components.HasCardView user="@User">
+                        <AttendancePanel model="@model" OnClockIn="ClockIn" OnClockOut="ClockOut" user="User" OnCardChange="OnCardChange" OnHandleCardPunch="HandleCardPunch" />
+                    </TimeTrackerBlazorWitkac.Custom_Components.HasCardView>
+                }
+                else
+                {
+                    <p>Ładowanie danych...</p>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    [CascadingParameter(Name = "User")]
+    public UserEntity User { get; set; } = default!;
+    [SupplyParameterFromForm]
+    public CardSwipeModel model { get; set; } = new();
+    private bool isDataLoaded = false;
+    protected override async Task OnInitializedAsync()
+    {
+        await CardSwipeService.SetParametersByAttendance(model, User);
+
+    }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var savedCardNumber = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "selectedCardNumber");
+
+            if (!string.IsNullOrEmpty(savedCardNumber))
+            {
+
+                var savedCard = model.UserCards.FirstOrDefault(card => card.Number == savedCardNumber);
+                if (savedCard != null)
+                {
+                    model.UserCardNumber = savedCard.Number;
+                    model.Company = savedCard.Company.Name;
+                    model.CompanyId = savedCard.CompanyId;
+                    model.UserCardId = savedCard.Id;
+
+                    await CardSwipeService.UpdateAttendanceStatus(model);
+
+                }
+            }
+            isDataLoaded = true;
+            StateHasChanged();
+        }
+    }
+
+
+    private async Task OnCardChange(ChangeEventArgs e)
+    {
+        await CardSwipeService.GetCardChange(e, model);
+        StateHasChanged();
+    }
+
+    private async Task HandleCardPunch()
+    {
+        var result = await CardSwipeService.GetCardPunchAsync(model, User);
+
+        if (result.IsSuccess)
+        {
+            model.Attendance = result.Value;
+            model.IsClockedIn = result.Value.EndDate == null;
+            StateHasChanged();
+        }
+        else
+        {
+            model.ErrorMessage = result.Error;
+        }
+    }
+
+
+
+    private async Task ClockIn()
+    {
+        var clockInResult = await CardSwipeService.GetOpenAttendance(model, User);
+        if (clockInResult.IsSuccess)
+        {
+            model.Attendance = clockInResult.Value;
+            model.IsClockedIn = true;
+            StateHasChanged();
+        }
+        else
+        {
+            model.ErrorMessage = clockInResult.Error;
+        }
+    }
+
+    private async Task ClockOut()
+    {
+        var clockOutResult = await CardSwipeService.GetCloseAttendance(model, User);
+        if (clockOutResult.IsSuccess)
+        {
+            model.IsClockedIn = false;
+            StateHasChanged();
+        }
+        else
+        {
+            model.ErrorMessage = clockOutResult.Error;
+        }
+    }
+}

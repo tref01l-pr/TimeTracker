@@ -1,0 +1,36 @@
+﻿@inject IToastNotificationService ToastService
+
+@rendermode InteractiveServer
+
+<Toasts class="p-3" Messages="messages" Placement="ToastsPlacement.TopRight" />
+
+@code {
+    private List<ToastMessage> messages = new();
+
+    protected override void OnInitialized()
+    {
+
+        ToastService.OnChange += UpdateMessages;
+
+ 
+        messages = ToastService.GetMessages();
+    }
+
+    private void UpdateMessages()
+    {
+      
+        messages = ToastService.GetMessages();
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void ShowMessage(ToastType toastType, string message)
+    {
+      
+        ToastService.ShowSuccess(message);
+    }
+
+    public void Dispose()
+    {
+        ToastService.OnChange -= UpdateMessages;
+    }
+}

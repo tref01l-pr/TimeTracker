@@ -1,0 +1,112 @@
+﻿@using TimeTrackerBlazorWitkac.Data.Entities
+
+<section>
+    <div class="container">
+        <div class="row">
+            @if (isShow)
+            {
+                <ProfileImage user="@user"/>
+            }
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3>Dane pracownika</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <p class="mb-0">E-mail</p>
+                            </div>
+                            <div class="col-sm-9">
+                                <p class="text-muted mb-0">@user?.Email</p>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(user?.PhoneNumber))
+                        {
+                            <hr>
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <p class="mb-0">Telefon</p>
+                                </div>
+                                <div class="col-sm-9">
+                                    <p class="text-muted mb-0">@user?.PhoneNumber</p>
+                                </div>
+                            </div>
+                        }
+                        @if (user?.DateOfBirth != null)
+                        {
+                            <hr>
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <p class="mb-0">Data urodzenia</p>
+                                </div>
+                                <div class="col-sm-9">
+                                    <p class="text-muted mb-0">@user?.DateOfBirth</p>
+                                </div>
+                            </div>
+                        }
+                        <hr>
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <p class="mb-0">Rola</p>
+                            </div>
+                            <div class="col-sm-9">
+                                <p class="text-muted mb-0">
+                                    @if (role != null)
+                                    {
+                                        <text>@string.Join(", ", role)</text>
+                                    }
+                                    else
+                                    {
+                                        <text>Brak przypisanych ról</text>
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <p class="mb-0">Rodzaj rejestracji</p>
+                            </div>
+                            <div class="col-sm-9">
+                                <p class="text-muted mb-0">@registrationInfo</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    [CascadingParameter(Name = "User")]
+    public UserEntity user { get; set; } = default!;
+
+    [Parameter] 
+    public IList<string> role { get; set; } = new List<string>();
+
+    [Parameter]
+    public bool isShow { get; set; }
+
+    private string? registrationInfo;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var authUser = authState.User;
+        var tokenClaims = authUser.FindFirst("AuthorizationType");
+        if (tokenClaims == null)
+        {
+            registrationInfo = "Użytkownik jest zalogowany w nieznany sposób";
+            return;
+        }
+
+        registrationInfo = tokenClaims.Value switch
+        {
+            "Microsoft" => "Użytkownik zalogowany przez MS",
+            "Cookie" => "Użytkownik jest zalogowany przez Cookie",
+            _ => "Użytkownik jest zalogowany w nieznany sposób"
+        };
+    }
+}

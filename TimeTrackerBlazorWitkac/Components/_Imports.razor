@@ -1,0 +1,79 @@
+﻿@using System.Net.Http
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.AspNetCore.WebUtilities
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.Options
+@using Microsoft.JSInterop
+@using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
+@using System.Text
+@using System.Text.Encodings.Web
+@using AutoMapper
+
+@using BlazorBootstrap
+@using Radzen
+@using Radzen.Blazor
+
+@using TimeTrackerBlazorWitkac
+@using TimeTrackerBlazorWitkac.Components
+@using TimeTrackerBlazorWitkac.Components.Account
+@using TimeTrackerBlazorWitkac.Components.Account.Pages
+@using TimeTrackerBlazorWitkac.Components.Account.Pages.Manage.Components
+@using TimeTrackerBlazorWitkac.Data
+@using TimeTrackerBlazorWitkac.Data.Entities
+@using TimeTrackerBlazorWitkac.Dto.UserCardDto
+@using TimeTrackerBlazorWitkac.Data.Models
+@using TimeTrackerBlazorWitkac.Interfaces
+@using TimeTrackerBlazorWitkac.Interfaces.Repository
+@using TimeTrackerBlazorWitkac.Interfaces.Services
+@using TimeTrackerBlazorWitkac.Service
+@using TimeTrackerBlazorWitkac.Components.SharedComponents
+@using TimeTrackerBlazorWitkac.Contracts.Responses
+@using TimeTrackerBlazorWitkac.Components.Account.Pages.Manage.Components.Models
+@using TimeTrackerBlazorWitkac.Components.Account.Pages.Manage.Components.Details.User
+@using TimeTrackerBlazorWitkac.Components.Account.Pages.Manage.Components.Details.Calendar
+@using TimeTrackerBlazorWitkac.Interfaces.Services.Application
+@using TimeTrackerBlazorWitkac.Helpers
+@using TimeTrackerBlazorWitkac.Resources.AbsenceType
+@using TimeTrackerBlazorWitkac.Components.Account.Pages.Manage.Components.Selector
+@using TimeTrackerBlazorWitkac.Components.Account.Pages.Manage.Components.Column
+@using TimeTrackerBlazorWitkac.Resources
+@using TimeTrackerBlazorWitkac.Custom_Components
+@using IAuthorizationService = TimeTrackerBlazorWitkac.Interfaces.Services.Application.IAuthorizationService
+
+
+
+
+@inject NavigationManager NavigationManager
+@inject UserManager<UserEntity> UserManager
+@inject SignInManager<UserEntity> SignInManager
+@inject IdentityUserAccessor UserAccessor
+@inject IdentityRedirectManager RedirectManager
+@inject IAuthorizationService AuthorizationService
+@inject IRolesService RolesService
+@inject IUsersService UsersService
+@inject ICompaniesService CompaniesService
+@inject IUserCardsService UserCardsService
+@inject IAbsencesService AbsencesService
+@inject IAbsenceTypesService AbsenceTypesService
+@inject IAttendancesService AttendancesService
+@inject IClipboardService Clipboard
+@inject ISchedulerService Scheduler
+@inject IUserStore<UserEntity> UserStore
+@inject IEmailSender<UserEntity> EmailSender
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IHttpContextAccessor HttpContextAccessor
+@inject TooltipService TooltipService
+@inject DialogService DialogService
+@inject ICardSwipeService CardSwipeService
+@inject IJSRuntime jsRuntime
+

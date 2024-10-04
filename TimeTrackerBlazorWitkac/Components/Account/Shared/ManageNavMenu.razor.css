@@ -1,0 +1,6 @@
+﻿body {
+}
+.nav-hover .nav-link {
+    position: relative;
+    transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out;
+}

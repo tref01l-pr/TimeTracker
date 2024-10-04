@@ -1,0 +1,16 @@
+﻿@using TimeTrackerBlazorWitkac.Data.Models
+@using TimeTrackerBlazorWitkac.Helpers
+@using TimeTrackerBlazorWitkac.Resources.User
+@if (role == UserRoles.Admin.GetDescription() && WorkDay.IsFullyConfirmed != ConfirmationStatus.Confirmed)
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; set; }
+    [Parameter, EditorRequired]
+    public string role { get; set; } = string.Empty;
+    [Parameter, EditorRequired]
+    public WorkDayResponse WorkDay { get; set; }
+}

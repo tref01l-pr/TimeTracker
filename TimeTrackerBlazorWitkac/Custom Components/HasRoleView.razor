@@ -1,0 +1,37 @@
+﻿@using BlazorBootstrap
+@using Microsoft.AspNetCore.Components.Authorization
+@using TimeTrackerBlazorWitkac.Contracts.Responses
+@using TimeTrackerBlazorWitkac.Data.Entities
+@using TimeTrackerBlazorWitkac.Helpers
+@using TimeTrackerBlazorWitkac.Interfaces.Services.Application
+@using TimeTrackerBlazorWitkac.Resources.User
+@inject IUserCardsService UserCardsService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<AuthorizeView>
+    <Authorized>
+        @if (user != null && !string.IsNullOrEmpty(role) && role == UserRoles.Admin.GetDescription())
+        {
+            @ChildContent
+        }
+    </Authorized>
+    <NotAuthorized>
+        <p>Dane niedostępne.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public UserEntity user { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public string role { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+    }
+}

@@ -1,0 +1,95 @@
+﻿@implements IDisposable
+
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">TimeTrackerBlazorWitkac</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler"/>
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="flex-column">
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Account/Manage">
+                        <span class="bi bi-person-fill-nav-menu ml-4" aria-hidden="true"></span> @context.User.Identity?.Name
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/">
+                        <span class="bi bi-calendar mb-4" aria-hidden="true"></span> Calendar
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/Account/Calendar">
+                        <span class="bi bi-calendar mb-4" aria-hidden="true"></span> Calendar Profile
+                    </NavLink>
+                </div>
+                <AuthorizeView Roles="Admin" Context="innerContext">
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="/user-search">
+                            <span class="bi bi-calendar mb-4" aria-hidden="true"></span> Wyszukaj użytkownika
+                        </NavLink>
+                    </div>
+                </AuthorizeView>
+                <div class="nav-item px-3">
+                    <form action="Account/Logout" method="post">
+                        <AntiforgeryToken/>
+                        <input type="hidden" name="ReturnUrl" value="@currentUrl"/>
+                        <button @onclick="Logout" type="submit" class="nav-link">
+                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Wylogowanie
+                        </button>
+                    </form>
+                </div>
+
+            </Authorized>
+            <NotAuthorized>
+                <div class="nav-item px-4">
+                    <NavLink class="nav-link" href="Account/Register">
+                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Rejestracja
+                    </NavLink>
+                </div>
+                <div class="nav-item px-4">
+                    <NavLink class="nav-link" href="Account/Login">
+                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Logowanie
+                    </NavLink>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </nav>
+</div>
+
+
+@code {
+    private string? currentUrl;
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+        if (NavigationManager.BaseUri == "Account/Logout")
+        {
+            HttpContextAccessor.HttpContext.Response.Cookies.Delete("Token");
+        }
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+
+    private void Logout()
+    {
+    }
+
+}
